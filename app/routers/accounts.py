@@ -5,7 +5,6 @@ from typing import Dict
 from typing import List
 
 from fastapi import APIRouter
-from fastapi import Header
 from fastapi import HTTPException
 from fastapi import Path
 from fastapi import status
@@ -35,6 +34,21 @@ _transactions: Dict[str, List[Dict[str, Any]]] = {}
     response_model=BankAccountResponse,
     tags=["account"],
     status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {
+            "model": BadRequestErrorResponse,
+            "description": "Invalid details supplied",
+        },
+        401: {
+            "model": ErrorResponse,
+            "description": "Access token is missing or invalid",
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "The user is not allowed to access the transaction",
+        },
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
+    },
 )
 def create_account(
     req: CreateBankAccountRequest,
@@ -58,8 +72,19 @@ def create_account(
     return account
 
 
-@router.get("", response_model=ListBankAccountsResponse, tags=["account"])
-def list_accounts(token: str = Header(None, alias="Authorization")):
+@router.get(
+    "",
+    response_model=ListBankAccountsResponse,
+    tags=["account"],
+    responses={
+        401: {
+            "model": ErrorResponse,
+            "description": "Access token is missing or invalid",
+        },
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
+    },
+)
+def list_accounts():
 
     return {"accounts": list(_accounts.values())}
 
@@ -69,10 +94,17 @@ def list_accounts(token: str = Header(None, alias="Authorization")):
     response_model=BankAccountResponse,
     tags=["account"],
     responses={
-        400: {"model": BadRequestErrorResponse},
-        401: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
+        400: {
+            "model": BadRequestErrorResponse,
+            "description": "The request didn't supply all the necessary data",
+        },
+        401: {"model": ErrorResponse, "description": "The user was not authenticated"},
+        403: {
+            "model": ErrorResponse,
+            "description": "The user is not allowed to access the bank account details",
+        },
+        404: {"model": ErrorResponse, "description": "Bank account was not found"},
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
     },
 )
 def fetch_account(
@@ -93,10 +125,20 @@ def fetch_account(
     response_model=BankAccountResponse,
     tags=["account"],
     responses={
-        400: {"model": BadRequestErrorResponse},
-        401: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
+        400: {
+            "model": BadRequestErrorResponse,
+            "description": "The request didn't supply all the necessary data",
+        },
+        401: {
+            "model": ErrorResponse,
+            "description": "Access token is missing or invalid",
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "The user is not allowed to update the bank account details",
+        },
+        404: {"model": ErrorResponse, "description": "Bank account was not found"},
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
     },
 )
 def update_account(
@@ -124,10 +166,20 @@ def update_account(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["transactions"],
     responses={
-        400: {"model": BadRequestErrorResponse},
-        401: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
+        400: {
+            "model": BadRequestErrorResponse,
+            "description": "The request didn't supply all the necessary data",
+        },
+        401: {
+            "model": ErrorResponse,
+            "description": "Access token is missing or invalid",
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "The user is not allowed to delete the bank account details",
+        },
+        404: {"model": ErrorResponse, "description": "Bank account was not found"},
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
     },
 )
 def delete_account(
@@ -158,11 +210,24 @@ def delete_account(
     status_code=status.HTTP_201_CREATED,
     tags=["transactions"],
     responses={
-        400: {"model": BadRequestErrorResponse},
-        401: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
-        422: {"model": ErrorResponse},
+        400: {
+            "model": BadRequestErrorResponse,
+            "description": "Invalid details supplied",
+        },
+        401: {
+            "model": ErrorResponse,
+            "description": "Access token is missing or invalid",
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "The user is not allowed to delete the bank account details",
+        },
+        404: {"model": ErrorResponse, "description": "Bank account was not found"},
+        422: {
+            "model": ErrorResponse,
+            "description": "Insufficient funds to process transaction",
+        },
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
     },
 )
 def create_transaction(
@@ -209,10 +274,20 @@ def create_transaction(
     response_model=ListTransactionsResponse,
     tags=["transactions"],
     responses={
-        400: {"model": BadRequestErrorResponse},
-        401: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
+        400: {
+            "model": BadRequestErrorResponse,
+            "description": "The request didn't supply all the necessary data",
+        },
+        401: {
+            "model": ErrorResponse,
+            "description": "Access token is missing or invalid",
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "The user is not allowed to access the transactions",
+        },
+        404: {"model": ErrorResponse, "description": "Bank account was not found"},
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
     },
 )
 def list_transactions(

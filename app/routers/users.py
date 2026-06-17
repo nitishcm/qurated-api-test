@@ -25,7 +25,18 @@ _db: Dict[str, Dict[str, Any]] = {}
 
 
 # Endpoints
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {
+            "model": BadRequestErrorResponse,
+            "description": "Invalid details supplied",
+        },
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
+    },
+)
 def create_user(req: CreateUserRequest):
     # basic uniqueness on email
     for user in _db.values():
@@ -63,7 +74,22 @@ def create_user(req: CreateUserRequest):
 @router.get(
     "/{userId}",
     response_model=UserResponse,
-    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    responses={
+        400: {
+            "model": BadRequestErrorResponse,
+            "description": "The request didn't supply all the necessary data",
+        },
+        401: {
+            "model": ErrorResponse,
+            "description": "Access token is missing or invalid",
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "The user is not allowed to access the transaction",
+        },
+        404: {"model": ErrorResponse, "description": "User was not found"},
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
+    },
 )
 def fetch_user_by_id(
     userId: str = Path(..., pattern=r"^usr-[A-Za-z0-9]+$"),
@@ -81,9 +107,20 @@ def fetch_user_by_id(
     "/{userId}",
     response_model=UserResponse,
     responses={
-        400: {"model": BadRequestErrorResponse},
-        401: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
+        400: {
+            "model": BadRequestErrorResponse,
+            "description": "The request didn't supply all the necessary data",
+        },
+        401: {
+            "model": ErrorResponse,
+            "description": "Access token is missing or invalid",
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "The user is not allowed to access the transaction",
+        },
+        404: {"model": ErrorResponse, "description": "User was not found"},
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
     },
 )
 def update_user_by_id(
@@ -130,10 +167,24 @@ def update_user_by_id(
     "/{userId}",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
-        401: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
-        409: {"model": ErrorResponse},
+        400: {
+            "model": BadRequestErrorResponse,
+            "description": "The request didn't supply all the necessary data",
+        },
+        401: {
+            "model": ErrorResponse,
+            "description": "Access token is missing or invalid",
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "The user is not allowed to access the transaction",
+        },
+        404: {"model": ErrorResponse, "description": "User was not found"},
+        409: {
+            "model": ErrorResponse,
+            "description": "A user cannot be deleted when they are associated with a bank account",
+        },
+        500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
     },
 )
 def delete_user_by_id(
