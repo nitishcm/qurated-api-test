@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import secrets
-from datetime import datetime
-from datetime import timezone
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional
 
 from fastapi import APIRouter
 from fastapi import Header
@@ -23,36 +19,15 @@ from app.models import ErrorResponse
 from app.models import ListBankAccountsResponse
 from app.models import ListTransactionsResponse
 from app.models import TransactionResponse
+from app.utils.utils import gen_account_number
+from app.utils.utils import gen_transaction_id
+from app.utils.utils import now_iso
 
 router = APIRouter(prefix="/v1/accounts")
 
 # Simple in-memory "database"
 _accounts: Dict[str, Dict[str, Any]] = {}
 _transactions: Dict[str, List[Dict[str, Any]]] = {}
-
-# Auth helper (same pattern as users router)
-
-
-def require_bearer(authorization: Optional[str] = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"message": "Access token is missing or invalid"},
-        )
-    return authorization.split(" ", 1)[1]
-
-
-def now_iso() -> str:
-    return datetime.now(tz=timezone.utc).isoformat()
-
-
-def gen_account_number() -> str:
-    # 01xxxxxx
-    return "01" + secrets.token_hex(3)[:6]
-
-
-def gen_transaction_id() -> str:
-    return f"tan-{secrets.token_hex(4)}"
 
 
 @router.post(
@@ -63,9 +38,8 @@ def gen_transaction_id() -> str:
 )
 def create_account(
     req: CreateBankAccountRequest,
-    token: str = Header(None, alias="Authorization"),
 ):
-    require_bearer(token)
+
     # create account with unique accountNumber
     account_number = gen_account_number()
     ts = now_iso()
@@ -86,7 +60,7 @@ def create_account(
 
 @router.get("", response_model=ListBankAccountsResponse, tags=["account"])
 def list_accounts(token: str = Header(None, alias="Authorization")):
-    require_bearer(token)
+
     return {"accounts": list(_accounts.values())}
 
 
@@ -103,9 +77,8 @@ def list_accounts(token: str = Header(None, alias="Authorization")):
 )
 def fetch_account(
     accountNumber: str = Path(..., pattern=r"^01\d{6}$"),
-    token: str = Header(None, alias="Authorization"),
 ):
-    require_bearer(token)
+
     acc = _accounts.get(accountNumber)
     if not acc:
         raise HTTPException(
@@ -129,9 +102,8 @@ def fetch_account(
 def update_account(
     req: Dict[str, Any],
     accountNumber: str = Path(..., pattern=r"^01\d{6}$"),
-    token: str = Header(None, alias="Authorization"),
 ):
-    require_bearer(token)
+
     acc = _accounts.get(accountNumber)
     if not acc:
         raise HTTPException(
@@ -160,9 +132,8 @@ def update_account(
 )
 def delete_account(
     accountNumber: str = Path(..., pattern=r"^01\d{6}$"),
-    token: str = Header(None, alias="Authorization"),
 ):
-    require_bearer(token)
+
     acc = _accounts.get(accountNumber)
     if not acc:
         raise HTTPException(
@@ -197,9 +168,8 @@ def delete_account(
 def create_transaction(
     req: CreateTransactionRequest,
     accountNumber: str = Path(..., pattern=r"^01\d{6}$"),
-    token: str = Header(None, alias="Authorization"),
 ):
-    require_bearer(token)
+
     acc = _accounts.get(accountNumber)
     if not acc:
         raise HTTPException(
@@ -247,9 +217,8 @@ def create_transaction(
 )
 def list_transactions(
     accountNumber: str = Path(..., pattern=r"^01\d{6}$"),
-    token: str = Header(None, alias="Authorization"),
 ):
-    require_bearer(token)
+
     acc = _accounts.get(accountNumber)
     if not acc:
         raise HTTPException(

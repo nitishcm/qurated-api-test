@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-import secrets
-from datetime import datetime
 from typing import Any
 from typing import Dict
-from typing import Optional
 
 from fastapi import APIRouter
-from fastapi import Header
 from fastapi import HTTPException
 from fastapi import Path
 from fastapi import status
@@ -19,6 +15,8 @@ from app.models import CreateUserRequest
 from app.models import ErrorResponse
 from app.models import UpdateUserRequest
 from app.models import UserResponse
+from app.utils.utils import gen_user_id
+from app.utils.utils import now_iso
 
 router = APIRouter(prefix="/v1/users", tags=["users"])
 
@@ -26,35 +24,12 @@ router = APIRouter(prefix="/v1/users", tags=["users"])
 _db: Dict[str, Dict[str, Any]] = {}
 
 
-# Simple auth dependency: endpoints that require bearer token call this
-def require_bearer(authorization: Optional[str] = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"message": "Access token is missing or invalid"},
-        )
-    # token accepted; in a real router validate token here
-    return authorization.split(" ", 1)[1]
-
-
-def now_iso() -> str:
-    from datetime import timezone
-
-    return datetime.now(tz=timezone.utc).isoformat()
-
-
-def gen_user_id() -> str:
-    return f"usr-{secrets.token_hex(4)}"
-
-
 # Endpoints
-
-
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(req: CreateUserRequest):
     # basic uniqueness on email
-    for u in _db.values():
-        if u["email"] == req.email:
+    for user in _db.values():
+        if user["email"] == req.email:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={
@@ -92,9 +67,7 @@ def create_user(req: CreateUserRequest):
 )
 def fetch_user_by_id(
     userId: str = Path(..., pattern=r"^usr-[A-Za-z0-9]+$"),
-    token: str = Header(None, alias="Authorization"),
 ):
-    require_bearer(token)
     user = _db.get(userId)
     if not user:
         raise HTTPException(
@@ -116,9 +89,8 @@ def fetch_user_by_id(
 def update_user_by_id(
     req: UpdateUserRequest,
     userId: str = Path(..., pattern=r"^usr-[A-Za-z0-9]+$"),
-    token: str = Header(None, alias="Authorization"),
 ):
-    require_bearer(token)
+
     user = _db.get(userId)
     if not user:
         raise HTTPException(
@@ -166,9 +138,8 @@ def update_user_by_id(
 )
 def delete_user_by_id(
     userId: str = Path(..., pattern=r"^usr-[A-Za-z0-9]+$"),
-    token: str = Header(None, alias="Authorization"),
 ):
-    require_bearer(token)
+
     user = _db.get(userId)
     if not user:
         raise HTTPException(
