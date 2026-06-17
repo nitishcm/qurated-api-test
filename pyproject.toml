@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "qurated-api-test"
+version = "0.0.1"
+description = "Project to create REST API for barclays test"
+authors = ["Nitish Mathur <nitishchandramathur@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "0.137.1"
+uvicorn = "0.49.0"
+pydantic = {version="2.13.4" , extras = ["email"]}
+
+[tool.poetry.dev-dependencies]
+pytest = "9.1.0"
+pytest-cov = "7.1.0"
+ruff = "0.15.17"
+
+[tool.poetry.scripts]
+execute-api = "app.main:app"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
