@@ -1,43 +1,71 @@
+%YAML 1.2
+---
 fail_fast: true
 repos:
   - repo: https://github.com/pre-commit/pre-commit
     rev: v4.6.0
     hooks:
-        - id: validate_manifest
-
-  -   repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v6.0.0
-      hooks:
-        -   id: trailing-whitespace
-        -   id: end-of-file-fixer
-        -   id: check-yaml
-        -   id: check-toml
-        -   id: debug-statements
-        -   id: name-tests-test
-        -   id: requirements-txt-fixer
-        -   id: check-added-large-files
-        -   id: mixed-line-ending
-
+      - id: validate_manifest
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: debug-statements
+      - id: name-tests-test
+      - id: requirements-txt-fixer
+      - id: check-added-large-files
+      - id: mixed-line-ending
+      - id: no-commit-to-branch
+        args:
+          - --branch=main
+      - id: check-docstring-first
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
     rev: v9.25.0
     hooks:
       - id: commitlint
-        stages: [ commit-msg ]
-
-  -   repo: https://github.com/asottile/reorder-python-imports
-      rev: v3.16.0
-      hooks:
-        -   id: reorder-python-imports
-            args: [--py310-plus, --add-import, 'from __future__ import annotations']
-  -   repo: https://github.com/asottile/add-trailing-comma
-      rev: v4.0.0
-      hooks:
-        -   id: add-trailing-comma
+        stages: [commit-msg]
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v10.0.1
+    hooks:
+      - id: cspell
+        additional_dependencies:
+          - "@cspell/dict-en-gb@5.0.19"
+          - "@cspell/dict-software-terms@5.1.11"
+        stages: [commit-msg]
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        files: \.ya?ml$
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: "v3.8.4"
+    hooks:
+      - id: prettier
+        args:
+          - --cache-location=.prettier-cache
+        additional_dependencies:
+          - prettier@2.1.2
+  - repo: https://github.com/asottile/reorder-python-imports
+    rev: v3.16.0
+    hooks:
+      - id: reorder-python-imports
+        args: [--py310-plus, --add-import, "from __future__ import annotations"]
+  - repo: https://github.com/asottile/add-trailing-comma
+    rev: v4.0.0
+    hooks:
+      - id: add-trailing-comma
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.17
     hooks:
       - id: ruff-check
-        args: [ --fix ]
+        args: [--fix]
       - id: ruff-format
   - repo: https://github.com/psf/black
     rev: 26.5.1
