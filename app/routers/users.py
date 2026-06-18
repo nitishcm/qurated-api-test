@@ -4,11 +4,13 @@ from typing import Any
 from typing import Dict
 
 from fastapi import APIRouter
+from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import Path
 from fastapi import status
 from fastapi.responses import JSONResponse
 from fastapi.responses import Response
+from fastapi.security import HTTPBearer
 
 from app.models import BadRequestErrorResponse
 from app.models import CreateUserRequest
@@ -17,9 +19,12 @@ from app.models import UpdateUserRequest
 from app.models import UserResponse
 from app.utils.utils import gen_user_id
 from app.utils.utils import now_iso
+from app.utils.validator import validate_missing_exists
+from app.utils.validator import validate_user_edit_token
 
 router = APIRouter(prefix="/v1/users", tags=["users"])
 
+http_bearer_scheme = HTTPBearer()
 # Simple in-memory "database"
 _db: Dict[str, Dict[str, Any]] = {}
 
@@ -93,7 +98,11 @@ def create_user(req: CreateUserRequest):
 )
 def fetch_user_by_id(
     userId: str = Path(..., pattern=r"^usr-[A-Za-z0-9]+$"),
+    token: str = Depends(http_bearer_scheme),
 ):
+    token_validation_response = token_validation(token)
+    if token_validation_response:
+        return token_validation_response
     user = _db.get(userId)
     if not user:
         raise HTTPException(
@@ -126,8 +135,11 @@ def fetch_user_by_id(
 def update_user_by_id(
     req: UpdateUserRequest,
     userId: str = Path(..., pattern=r"^usr-[A-Za-z0-9]+$"),
+    token: str = Depends(http_bearer_scheme),
 ):
-
+    token_validation_response = token_validation(token)
+    if token_validation_response:
+        return token_validation_response
     user = _db.get(userId)
     if not user:
         raise HTTPException(
@@ -189,8 +201,11 @@ def update_user_by_id(
 )
 def delete_user_by_id(
     userId: str = Path(..., pattern=r"^usr-[A-Za-z0-9]+$"),
+    token: str = Depends(http_bearer_scheme),
 ):
-
+    token_validation_response = token_validation(token)
+    if token_validation_response:
+        return token_validation_response
     user = _db.get(userId)
     if not user:
         raise HTTPException(
@@ -207,3 +222,17 @@ def delete_user_by_id(
         )
     del _db[userId]
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def token_validation(token: str = Depends(http_bearer_scheme)) -> None | JSONResponse:
+    if not validate_missing_exists(token.credentials):
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message": "Access token is missing or invalid"},
+        )
+    if not validate_user_edit_token(token):
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"message": "The user is not allowed to access the transaction"},
+        )
+    return None

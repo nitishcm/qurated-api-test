@@ -5,10 +5,13 @@ from typing import Dict
 from typing import List
 
 from fastapi import APIRouter
+from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import Path
 from fastapi import status
 from fastapi.responses import Response
+from fastapi.security import HTTPBearer
+from starlette.responses import JSONResponse
 
 from app.models import BadRequestErrorResponse
 from app.models import BankAccountResponse
@@ -21,8 +24,11 @@ from app.models import TransactionResponse
 from app.utils.utils import gen_account_number
 from app.utils.utils import gen_transaction_id
 from app.utils.utils import now_iso
+from app.utils.validator import validate_account_edit_token
+from app.utils.validator import validate_missing_exists
 
 router = APIRouter(prefix="/v1/accounts")
+http_bearer_scheme = HTTPBearer()
 
 # Simple in-memory "database"
 _accounts: Dict[str, Dict[str, Any]] = {}
@@ -52,8 +58,11 @@ _transactions: Dict[str, List[Dict[str, Any]]] = {}
 )
 def create_account(
     req: CreateBankAccountRequest,
+    token: str = Depends(http_bearer_scheme),
 ):
-
+    token_validation_response = token_validation(token)
+    if token_validation_response:
+        return token_validation_response
     # create account with unique accountNumber
     account_number = gen_account_number()
     ts = now_iso()
@@ -84,8 +93,10 @@ def create_account(
         500: {"model": ErrorResponse, "description": "An unexpected error occurred"},
     },
 )
-def list_accounts():
-
+def list_accounts(token: str = Depends(http_bearer_scheme)):
+    token_validation_response = token_validation(token)
+    if token_validation_response:
+        return token_validation_response
     return {"accounts": list(_accounts.values())}
 
 
@@ -109,8 +120,11 @@ def list_accounts():
 )
 def fetch_account(
     accountNumber: str = Path(..., pattern=r"^01\d{6}$"),
+    token: str = Depends(http_bearer_scheme),
 ):
-
+    token_validation_response = token_validation(token)
+    if token_validation_response:
+        return token_validation_response
     acc = _accounts.get(accountNumber)
     if not acc:
         raise HTTPException(
@@ -144,8 +158,11 @@ def fetch_account(
 def update_account(
     req: Dict[str, Any],
     accountNumber: str = Path(..., pattern=r"^01\d{6}$"),
+    token: str = Depends(http_bearer_scheme),
 ):
-
+    token_validation_response = token_validation(token)
+    if token_validation_response:
+        return token_validation_response
     acc = _accounts.get(accountNumber)
     if not acc:
         raise HTTPException(
@@ -183,9 +200,12 @@ def update_account(
     },
 )
 def delete_account(
+    token: str = Depends(http_bearer_scheme),
     accountNumber: str = Path(..., pattern=r"^01\d{6}$"),
 ):
-
+    token_validation_response = token_validation(token)
+    if token_validation_response:
+        return token_validation_response
     acc = _accounts.get(accountNumber)
     if not acc:
         raise HTTPException(
@@ -232,9 +252,12 @@ def delete_account(
 )
 def create_transaction(
     req: CreateTransactionRequest,
+    token: str = Depends(http_bearer_scheme),
     accountNumber: str = Path(..., pattern=r"^01\d{6}$"),
 ):
-
+    token_validation_response = token_validation(token)
+    if token_validation_response:
+        return token_validation_response
     acc = _accounts.get(accountNumber)
     if not acc:
         raise HTTPException(
@@ -291,9 +314,12 @@ def create_transaction(
     },
 )
 def list_transactions(
+    token: str = Depends(http_bearer_scheme),
     accountNumber: str = Path(..., pattern=r"^01\d{6}$"),
 ):
-
+    token_validation_response = token_validation(token)
+    if token_validation_response:
+        return token_validation_response
     acc = _accounts.get(accountNumber)
     if not acc:
         raise HTTPException(
@@ -301,3 +327,17 @@ def list_transactions(
             detail={"message": "Bank account was not found"},
         )
     return {"transactions": _transactions.get(accountNumber, [])}
+
+
+def token_validation(token: str = Depends(http_bearer_scheme)) -> None | JSONResponse:
+    if not validate_missing_exists(token.credentials):
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message": "Access token is missing or invalid"},
+        )
+    if not validate_account_edit_token(token):
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"message": "The user is not allowed to access the transaction"},
+        )
+    return None

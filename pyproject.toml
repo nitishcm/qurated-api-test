@@ -15,6 +15,7 @@ pydantic = {version="2.13.4" , extras = ["email"]}
 pytest = "9.1.0"
 pytest-cov = "7.1.0"
 ruff = "0.15.17"
+black = "26.5.1"
 
 [tool.poetry.scripts]
 execute-api = "app.main:app"
