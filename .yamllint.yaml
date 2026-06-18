@@ -1,0 +1,9 @@
+extends: default
+rules:
+  line-length:
+    max: 80
+    level: warning
+ignore: |
+  cspell.config.yaml
+  .pre-commit-config.yaml
+  .yamllint.yaml

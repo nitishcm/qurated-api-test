@@ -1,0 +1,19 @@
+---
+$schema: https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json
+version: 0.2
+allowCompoundWords: true
+ignorePaths:
+  - ".git"
+  - ".venv"
+  - ".pre-commit-config.yaml"
+  - ".prettier-cache"
+  - ".pytest_cache"
+  - "venv"
+  - "node_modules"
+  - "dist"
+  - "build"
+  - "coverage"
+  - pyproject.toml
+  - package-lock.json
+  - package.json
+  - poetry.lock
